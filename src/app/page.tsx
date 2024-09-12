@@ -14,10 +14,10 @@ export default function Home() {
           priority
         />
         <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
+          <li><a href="/dashboard">Dashboard</a></li>
+          <li><a href="/products">Product List</a></li>
+          <li><a href="/products/add">Add Product</a></li>
+          <li><a href="/login">Login</a></li>
         </ol>
 
         <div className={styles.ctas}>
