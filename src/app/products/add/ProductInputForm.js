@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Page,
   Layout,
@@ -11,12 +12,20 @@ import {
   InlineStack,
   Toast,
   Card,
-  Box
+  Box,
+  Spinner
 } from '@shopify/polaris';
+import crypto from 'crypto';
+
+const generateProductId = () => {
+  const timestamp = Date.now().toString();
+  return 'PROD' + crypto.createHash('md5').update(timestamp).digest('hex').substring(0, 8);
+};
 
 const ProductInputForm = () => {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [product, setProduct] = useState({
-    product_id: '',
     name: '',
     brand: '',
     category: '',
@@ -26,11 +35,28 @@ const ProductInputForm = () => {
     usage_instructions: '',
     size: '',
     weight: '',
-    current_status: '',
-    current_location: '',
+    current_status: 'In Manufacturing',
   });
   const [showToast, setShowToast] = useState(false);
+  const [toastContent, setToastContent] = useState('Product submitted successfully');
+  const [user, setUser] = useState({ name: '', email: '' });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/user');
+        const data = await response.json();
+        if (data.user) {
+          setUser({ name: data.user.name, email: data.user.email });
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+  
   const handleChange = useCallback((value, id) => {
     setProduct(prev => ({ ...prev, [id]: value }));
   }, []);
@@ -41,15 +67,65 @@ const ProductInputForm = () => {
     setProduct(prev => ({ ...prev, images: newImages }));
   }, [product.images]);
 
-  const handleSubmit = useCallback(() => {
-    console.log(product);
-    setShowToast(true);
-  }, [product]);
+  const handleSubmit = useCallback(async () => {
+    setIsSubmitting(true);
+    try {
+      const productId = generateProductId();
+      const jsonData = JSON.stringify({
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        description: product.description,
+        images: product.images,
+        ingredients: product.ingredients.split(',').map(item => item.trim()),
+        usage_instructions: product.usage_instructions,
+        size: product.size,
+        weight: product.weight,
+        current_status: product.current_status,
+        created_by: {
+          name: user.name,
+          email: user.email
+        }
+      });
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/beauty-products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          jsonData: jsonData,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to submit product: ${response.status} ${response.statusText}. ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Product submitted successfully:', result);
+      setToastContent('Product submitted successfully');
+      setShowToast(true);
+
+      setTimeout(() => {
+        router.push('/products');
+      }, 1500);
+    } catch (error) {
+      console.error('Error submitting product:', error);
+      setToastContent(`Error: ${error.message}`);
+      setShowToast(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [product, user, router]);
 
   const toggleToast = useCallback(() => setShowToast((active) => !active), []);
 
   const toastMarkup = showToast ? (
-    <Toast content="Product submitted successfully" onDismiss={toggleToast} />
+    <Toast content={toastContent} error={toastContent.startsWith('Error:')} onDismiss={toggleToast} />
   ) : null;
 
   const categoryOptions = [
@@ -61,15 +137,10 @@ const ProductInputForm = () => {
   ];
 
   const statusOptions = [
-    {label: 'Manufacturing', value: 'Manufacturing'},
+    {label: 'In Manufacturing', value: 'In Manufacturing'},
     {label: 'In QA', value: 'In QA'},
-    {label: 'Shipping to retailer', value: 'Shipping to retailer'},
-  ];
-
-  const locationOptions = [
-    {label: 'Factory', value: 'Factory'},
-    {label: 'Warehouse', value: 'Warehouse'},
-    {label: 'Shopping', value: 'Shopping'},
+    {label: 'Ready to ship', value: 'Ready to ship'},
+    {label: 'Shipped', value: 'Shipped'},
   ];
 
   return (
@@ -85,29 +156,23 @@ const ProductInputForm = () => {
               <FormLayout>
                 <FormLayout.Group>
                   <TextField
-                    label="Product ID"
-                    value={product.product_id}
-                    onChange={(value) => handleChange(value, 'product_id')}
-                  />
-                  <TextField
                     label="Name"
                     value={product.name}
                     onChange={(value) => handleChange(value, 'name')}
                   />
-                </FormLayout.Group>
-                <FormLayout.Group>
                   <TextField
                     label="Brand"
                     value={product.brand}
                     onChange={(value) => handleChange(value, 'brand')}
                   />
-                  <Select
-                    label="Category"
-                    options={categoryOptions}
-                    value={product.category}
-                    onChange={(value) => handleChange(value, 'category')}
-                  />
                 </FormLayout.Group>
+                <Select
+                  label="Category"
+                  options={categoryOptions}
+                  value={product.category}
+                  onChange={(value) => handleChange(value, 'category')}
+                  placeholder="Select Category"
+                />
                 <TextField
                   label="Description"
                   value={product.description}
@@ -157,16 +222,24 @@ const ProductInputForm = () => {
                     options={statusOptions}
                     value={product.current_status}
                     onChange={(value) => handleChange(value, 'current_status')}
-                  />
-                  <Select
-                    label="Current Location"
-                    options={locationOptions}
-                    value={product.current_location}
-                    onChange={(value) => handleChange(value, 'current_location')}
+                    placeholder="Select Status"
                   />
                 </FormLayout.Group>
                 <InlineStack align="end">
-                  <Button primary onClick={handleSubmit}>Submit</Button>
+                  <Button
+                    primary
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <InlineStack align="center" gap="2">
+                        <Spinner size="small" />
+                        <span>Saving to blockchain...</span>
+                      </InlineStack>
+                    ) : (
+                      'Submit'
+                    )}
+                  </Button>
                 </InlineStack>
               </FormLayout>
             </Layout.Section>

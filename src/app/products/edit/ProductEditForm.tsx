@@ -53,11 +53,11 @@ const ProductEditForm = () => {
     setProduct(mockProductData);
   }, []);
 
-  const handleChange = useCallback((value, id) => {
+  const handleChange = useCallback((value: string, id: string) => {
     setProduct(prev => ({ ...prev, [id]: value }));
   }, []);
 
-  const handleImageChange = useCallback((value, index, field) => {
+  const handleImageChange = useCallback((value: string, index: number, field: string) => {
     const newImages = [...product.images];
     newImages[index] = { ...newImages[index], [field]: value };
     setProduct(prev => ({ ...prev, images: newImages }));
@@ -95,7 +95,7 @@ const ProductEditForm = () => {
   ];
 
   return (
-    <Box style={{marginBottom: '50px'}}>
+    <Box>
       <Card background="bg-surface-secondary">
         <Layout>
           <Layout.Section>
@@ -106,11 +106,13 @@ const ProductEditForm = () => {
                   value={product.product_id}
                   onChange={(value) => handleChange(value, 'product_id')}
                   disabled
+                  autoComplete="off"
                 />
                 <TextField
                   label="Name"
                   value={product.name}
                   onChange={(value) => handleChange(value, 'name')}
+                  autoComplete="off"
                 />
               </FormLayout.Group>
               <FormLayout.Group>
@@ -118,6 +120,7 @@ const ProductEditForm = () => {
                   label="Brand"
                   value={product.brand}
                   onChange={(value) => handleChange(value, 'brand')}
+                  autoComplete="off"
                 />
                 <Select
                   label="Category"
@@ -131,6 +134,7 @@ const ProductEditForm = () => {
                 value={product.description}
                 onChange={(value) => handleChange(value, 'description')}
                 multiline={4}
+                autoComplete="off"
               />
               {product.images.map((image, index) => (
                 <FormLayout.Group key={index}>
@@ -138,11 +142,13 @@ const ProductEditForm = () => {
                     label={`Image ${index + 1} URL`}
                     value={image.url}
                     onChange={(value) => handleImageChange(value, index, 'url')}
+                    autoComplete="off"
                   />
                   <TextField
                     label={`Image ${index + 1} Alt Text`}
                     value={image.alt_text}
                     onChange={(value) => handleImageChange(value, index, 'alt_text')}
+                    autoComplete="off"
                   />
                 </FormLayout.Group>
               ))}
@@ -150,23 +156,27 @@ const ProductEditForm = () => {
                 label="Ingredients (comma-separated)"
                 value={product.ingredients}
                 onChange={(value) => handleChange(value, 'ingredients')}
+                autoComplete="off"
               />
               <TextField
                 label="Usage Instructions"
                 value={product.usage_instructions}
                 onChange={(value) => handleChange(value, 'usage_instructions')}
                 multiline={3}
+                autoComplete="off"
               />
               <FormLayout.Group>
                 <TextField
                   label="Size"
                   value={product.size}
                   onChange={(value) => handleChange(value, 'size')}
+                  autoComplete="off"
                 />
                 <TextField
                   label="Weight"
                   value={product.weight}
                   onChange={(value) => handleChange(value, 'weight')}
+                  autoComplete="off"
                 />
               </FormLayout.Group>
               <FormLayout.Group>
@@ -184,7 +194,7 @@ const ProductEditForm = () => {
                 />
               </FormLayout.Group>
               <InlineStack align="end">
-                <Button primary onClick={handleSubmit}>Update Product</Button>
+                <Button variant="primary" onClick={handleSubmit}>Update Product</Button>
               </InlineStack>
             </FormLayout>
           </Layout.Section>

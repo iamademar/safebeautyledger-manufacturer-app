@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Page,
   IndexTable,
@@ -10,46 +10,48 @@ import {
   Badge,
   Thumbnail,
   Tabs,
+  Loading,
 } from '@shopify/polaris';
 
-const products = [
-  {
-    product_id: "12345",
-    name: "Hydrating Face Serum",
-    brand: "GlowBeauty",
-    category: "Skin Care",
-    description: "A lightweight, fast-absorbing serum that hydrates and nourishes your skin for a radiant glow.",
-    images: [
-      {
-        url: "https://example.com/images/hydrating-serum-front.jpg",
-        alt_text: "Front view of Hydrating Face Serum"
-      },
-      {
-        url: "https://example.com/images/hydrating-serum-back.jpg",
-        alt_text: "Back view of Hydrating Face Serum"
-      }
-    ],
-    ingredients: [
-      "Hyaluronic Acid",
-      "Vitamin C",
-      "Aloe Vera",
-      "Green Tea Extract"
-    ],
-    usage_instructions: "Apply 2-3 drops to clean skin before moisturizing, morning and night.",
-    size: "30ml",
-    weight: "50g",
-    current_status: "In manufacturing",
-    current_location: "warehouse",
-    qa_provider: "FDA",
-    qa_status: "Passed",
-    qa_date: "2024-02-15",
-    qa_report_number: "1234567890",
-    qa_report_url: "https://example.com/qa-report/1234567890.pdf"
-  },
-  // Add more product objects here...
-];
+interface Product {
+  product_id: string;
+  data: {
+    name: string;
+    brand: string;
+    category: string;
+    current_status: string;
+    images: { url: string; alt_text: string }[];
+  };
+}
 
 export default function ProductList() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/beauty-products');
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        if (data.success && Array.isArray(data.products)) {
+          console.log(data.products);
+          setProducts(data.products);
+        } else {
+          throw new Error('Invalid data structure');
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const resourceName = {
     singular: 'product',
     plural: 'products',
@@ -59,7 +61,7 @@ export default function ProductList() {
     useIndexResourceState(products);
 
   const rowMarkup = products.map(
-    ({product_id, name, brand, category, current_status, images}, index) => (
+    ({product_id, data}, index) => (
       <IndexTable.Row
         id={product_id}
         key={product_id}
@@ -68,19 +70,20 @@ export default function ProductList() {
       >
         <IndexTable.Cell>
           <Thumbnail
-            source={images[0].url}
-            alt={images[0].alt_text}
+            source={data.images?.[0]?.url || ''}
+            alt={data.images?.[0]?.alt_text || ''}
           />
         </IndexTable.Cell>
+        <IndexTable.Cell>{product_id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
-            {name}
+            {data.name}
           </Text>
         </IndexTable.Cell>
-        <IndexTable.Cell>{brand}</IndexTable.Cell>
-        <IndexTable.Cell>{category}</IndexTable.Cell>
+        <IndexTable.Cell>{data.brand}</IndexTable.Cell>
+        <IndexTable.Cell>{data.category}</IndexTable.Cell>
         <IndexTable.Cell>
-          <Badge status={getStatusColor(current_status)}>{current_status}</Badge>
+          <Badge progress={getStatusColor(data.current_status)}>{data.current_status}</Badge>
         </IndexTable.Cell>
       </IndexTable.Row>
     ),
@@ -105,7 +108,7 @@ export default function ProductList() {
     },
     {
       id: 'ready-to-ship',
-      content: 'Ready to Ship',
+      content: 'Ready to ship',
       panelID: 'ready-to-ship-content',
     },
     {
@@ -117,41 +120,48 @@ export default function ProductList() {
 
   return (
     <Page title="Products">
-      <Tabs tabs={tabs} />
+      <Tabs tabs={tabs} selected={0} />
       <LegacyCard>
-        <IndexTable
-          resourceName={resourceName}
-          itemCount={products.length}
-          selectedItemsCount={
-            allResourcesSelected ? 'All' : selectedResources.length
-          }
-          onSelectionChange={handleSelectionChange}
-          headings={[
-            {title: 'Image'},
-            {title: 'Name'},
-            {title: 'Brand'},
-            {title: 'Category'},
-            {title: 'Status'},
-          ]}
-        >
-          {rowMarkup}
-        </IndexTable>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <Loading />
+          </div>
+        ) : (
+          <IndexTable
+            resourceName={resourceName}
+            itemCount={products.length}
+            selectedItemsCount={
+              allResourcesSelected ? 'All' : selectedResources.length
+            }
+            onSelectionChange={handleSelectionChange}
+            headings={[
+              {title: 'Image'},
+              {title: 'Product ID'},
+              {title: 'Name'},
+              {title: 'Brand'},
+              {title: 'Category'},
+              {title: 'Status'},
+            ]}
+          >
+            {rowMarkup}
+          </IndexTable>
+        )}
       </LegacyCard>
     </Page>
   );
 }
 
-function getStatusColor(status) {
+function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
     case 'in manufacturing':
-      return 'info';
+      return 'incomplete';
     case 'in qa':
-      return 'warning';
+      return 'incomplete';
     case 'ready to ship':
-      return 'success';
+      return 'partiallyComplete';
     case 'shipped':
-      return 'success';
+      return 'complete';
     default:
-      return 'new';
+      return 'incomplete';
   }
 }

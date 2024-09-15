@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation';
 import '@shopify/polaris/build/esm/styles.css';
 import enTranslations from '@shopify/polaris/locales/en.json';
 import { Playfair_Display } from 'next/font/google';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const playfairDisplay = Playfair_Display({ subsets: ['latin'] });
 
@@ -23,16 +25,24 @@ export default function RootLayout({
     [],
   );
 
+  const [user, setUser] = useState({ name: '', email: '' });
+
   const userMenuMarkup = (
     <TopBar.UserMenu
       actions={[
         {
-          items: [{content: 'Log out', url: '/login'}],
+          items: [{
+            content: 'Log out',
+            onAction: async () => {
+              await fetch('/api/logout', { method: 'POST' });
+              router.push('/login');
+            }
+          }],
         },
       ]}
-      name="John Doe"
-      detail="john.doe@example.com"
-      initials="JD"
+      name={user.name}
+      detail={user.email}
+      initials={user.name.split(' ').map(n => n[0]).join('')}
       open={userMenuActive}
       onToggle={toggleUserMenu}
     />
@@ -84,6 +94,30 @@ export default function RootLayout({
       />
     </Navigation>
   );
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/user');
+        const data = await response.json();
+        if (data.user) {
+          setIsLoggedIn(true);
+          setUser({ name: data.user.name, email: data.user.email });
+        } else {
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        router.push('/login');
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   return (
     <html lang="en">
