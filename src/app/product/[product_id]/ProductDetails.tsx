@@ -11,7 +11,6 @@ import {
   Badge,
   SkeletonBodyText,
   Box,
-  Bleed,
   Divider,
   SkeletonDisplayText,
   DescriptionList
@@ -124,7 +123,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
         </BlockStack>
         <BlockStack gap={{ xs: "400", md: "200" }}>
           <Card roundedAbove="sm">
-            <BlockStack gap="400" alignment="center">
+            <BlockStack gap="400">
               <Text variant="headingMd" as="h2">Product QR Code</Text>
               <QRCodeSVG value={`http://localhost:3000/app/product/${productId}`} size={200} />
             </BlockStack>
@@ -137,7 +136,7 @@ export function ProductDetails({ productId }: ProductDetailsProps) {
                   { term: 'Brand', description: product.brand },
                   { term: 'Size', description: product.size },
                   { term: 'Weight', description: product.weight },
-                  { term: 'Status', description: <Badge status="success">{product.current_status}</Badge> },
+                  { term: 'Status', description: <Badge>{product.current_status}</Badge> },
                 ]}
               />
             </BlockStack>
@@ -163,7 +162,7 @@ function LoadingLayout() {
           <Card roundedAbove="sm">
             <BlockStack gap="400">
               <SkeletonDisplayText size="small" />
-              <Box border="divider" borderRadius="base" minHeight="20rem" />
+              <Box minHeight="20rem" />
             </BlockStack>
           </Card>
           <Card roundedAbove="sm">

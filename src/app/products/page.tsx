@@ -52,14 +52,14 @@ export default function ProductList() {
   }, []);
 
   const rows = products.map(({ product_id, data }) => [
-    product_id,
-    <Text variant="bodyMd" fontWeight="bold" as="span">
+    <React.Fragment key={`${product_id}-id`}>{product_id}</React.Fragment>,
+    <Text key={`${product_id}-name`} variant="bodyMd" fontWeight="bold" as="span">
       {data.name}
     </Text>,
-    data.brand,
-    data.category,
-    <Badge progress={getStatusColor(data.current_status)}>{data.current_status}</Badge>,
-    <Link href={`/product/${product_id}`} passHref>
+    <React.Fragment key={`${product_id}-brand`}>{data.brand}</React.Fragment>,
+    <React.Fragment key={`${product_id}-category`}>{data.category}</React.Fragment>,
+    <Badge key={`${product_id}-status`} progress={getStatusColor(data.current_status)}>{data.current_status}</Badge>,
+    <Link key={`${product_id}-link`} href={`/product/${product_id}`} passHref>
       <Button size="slim">View</Button>
     </Link>
   ]);
