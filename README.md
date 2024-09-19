@@ -5,8 +5,7 @@ SafeBeautyLedger is a web application designed to manage and track beauty produc
 ## Tech Stack
 
 - **Frontend**: React with Next.js, TypeScript, and Shopify Polaris for UI components.
-- **Backend**: Node.js with Next.js API routes.
-- **Database**: Not specified, assumed to be managed via API.
+- **Backend**: ExpressJS with Next.js API routes.
 - **Authentication**: Iron Session for session management.
 - **Styling**: CSS Modules.
 
